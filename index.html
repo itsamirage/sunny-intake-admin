@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Sunny DME — Breast Pump Intake Admin</title>
+<style>
+  :root {
+    --brand:#c4527a;
+    --brand-dark:#a8446a;
+    --ink:#1a2a32;
+    --ink-2:#3d5461;
+    --muted:#7a9aab;
+    --bg:#f7f4f2;
+    --card:#ffffff;
+    --line:#e8d0dc;
+    --line-2:#f0e4ec;
+    --ok:#1f8a4c;
+    --warn:#c4773c;
+    --info:#0284c7;
+  }
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','DM Sans',sans-serif;background:var(--bg);color:var(--ink);margin:0;line-height:1.5}
+
+  /* ===== Login screen ===== */
+  .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .login-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:36px 32px;max-width:380px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.06)}
+  .login-card h1{margin:0 0 6px;font-size:22px;font-weight:800}
+  .login-card p{margin:0 0 24px;color:var(--ink-2);font-size:14px}
+  .login-card input{width:100%;padding:12px 14px;border:1.5px solid #e0dae0;border-radius:8px;font-size:15px;font-family:inherit;background:#fafafa;outline:none}
+  .login-card input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(196,82,122,.12);background:#fff}
+  .login-card button{width:100%;margin-top:14px;padding:13px;border:0;border-radius:8px;background:var(--brand);color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
+  .login-card button:hover{background:var(--brand-dark)}
+  .login-err{background:#fff0f0;border:1px solid #f0c0c0;color:#8a2222;border-radius:8px;padding:10px 12px;margin-top:14px;font-size:13px}
+
+  /* ===== App ===== */
+  .app{display:none;min-height:100vh}
+  .topbar{background:#fff;border-bottom:1px solid var(--line-2);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+  .topbar-l{display:flex;align-items:center;gap:12px}
+  .topbar-l strong{font-size:15px}
+  .topbar-l .pill{background:#fff0f5;color:var(--brand);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:100px}
+  .topbar-r{display:flex;align-items:center;gap:10px}
+  .topbar button{background:transparent;border:1px solid var(--line);color:var(--ink-2);padding:7px 12px;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer}
+  .topbar button:hover{background:#fafafa}
+
+  .layout{display:grid;grid-template-columns:380px 1fr;min-height:calc(100vh - 53px)}
+  @media(max-width:900px){.layout{grid-template-columns:1fr}}
+
+  /* List */
+  .list{border-right:1px solid var(--line-2);background:#fff;display:flex;flex-direction:column;max-height:calc(100vh - 53px)}
+  .list-filters{padding:14px;border-bottom:1px solid var(--line-2);display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font-size:12px;font-weight:600;padding:6px 12px;border-radius:100px;border:1px solid var(--line-2);background:#fff;color:var(--ink-2);cursor:pointer;font-family:inherit}
+  .chip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .list-scroll{overflow-y:auto;flex:1}
+  .list-item{padding:14px 16px;border-bottom:1px solid var(--line-2);cursor:pointer;transition:background .15s}
+  .list-item:hover{background:#fafafa}
+  .list-item.selected{background:#fff0f5}
+  .list-item .li-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .list-item .li-name{font-weight:700;font-size:14px}
+  .list-item .li-date{font-size:11px;color:var(--muted);white-space:nowrap}
+  .list-item .li-meta{font-size:12px;color:var(--ink-2);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+  .list-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px}
+
+  .status{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:100px}
+  .status-new{background:#fff0f5;color:var(--brand)}
+  .status-contacted{background:#fff4e5;color:var(--warn)}
+  .status-verified{background:#e3f2fd;color:var(--info)}
+  .status-shipped{background:#e8f7ee;color:var(--ok)}
+  .status-closed{background:#eee;color:#666}
+
+  /* Detail */
+  .detail{padding:28px;overflow-y:auto;max-height:calc(100vh - 53px)}
+  .detail-empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:15px;text-align:center;padding:40px}
+  .detail h2{margin:0 0 4px;font-size:22px;font-weight:800}
+  .detail .sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;margin-bottom:24px}
+  .field{display:flex;flex-direction:column;gap:3px}
+  .field label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .field .val{font-size:14px;color:var(--ink);word-break:break-word}
+  .field .val a{color:var(--brand);text-decoration:none}
+  .field .val a:hover{text-decoration:underline}
+  .field.full{grid-column:1/-1}
+  .section{border-top:1px solid var(--line-2);padding-top:20px;margin-bottom:20px}
+  .section h3{margin:0 0 14px;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)}
+
+  .admin-block{background:#fafafa;border:1px solid var(--line-2);border-radius:12px;padding:18px}
+  .admin-block label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+  .admin-block select,.admin-block textarea{width:100%;padding:10px 12px;border:1.5px solid #e0dae0;border-radius:8px;font-size:14px;font-family:inherit;background:#fff;outline:none}
+  .admin-block select:focus,.admin-block textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(196,82,122,.12)}
+  .admin-block textarea{min-height:90px;resize:vertical;margin-top:0}
+  .admin-block .row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  .admin-block button{background:var(--brand);color:#fff;border:0;padding:10px 18px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+  .admin-block button:hover{background:var(--brand-dark)}
+  .admin-block button:disabled{opacity:.6;cursor:wait}
+  .admin-block .saved{display:inline-block;margin-left:12px;color:var(--ok);font-size:13px;font-weight:600}
+
+  .loading{text-align:center;padding:40px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div class="login" id="login">
+  <form class="login-card" id="loginForm">
+    <h1>Sunny DME &middot; Intake Admin</h1>
+    <p>Enter the admin password to view breast pump intake submissions.</p>
+    <input type="password" id="pw" placeholder="Admin password" autocomplete="current-password" autofocus>
+    <button type="submit" id="loginBtn">Sign in</button>
+    <div class="login-err" id="loginErr" style="display:none"></div>
+  </form>
+</div>
+
+<!-- ============ APP ============ -->
+<div class="app" id="app">
+
+  <div class="topbar">
+    <div class="topbar-l">
+      <strong>Sunny DME &middot; Intake Admin</strong>
+      <span class="pill">Breast Pumps</span>
+    </div>
+    <div class="topbar-r">
+      <button id="refreshBtn">Refresh</button>
+      <button id="logoutBtn">Log out</button>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <div class="list">
+      <div class="list-filters" id="filters">
+        <button class="chip active" data-status="all">All</button>
+        <button class="chip" data-status="new">New</button>
+        <button class="chip" data-status="contacted">Contacted</button>
+        <button class="chip" data-status="verified">Verified</button>
+        <button class="chip" data-status="shipped">Shipped</button>
+        <button class="chip" data-status="closed">Closed</button>
+      </div>
+      <div class="list-scroll" id="listScroll">
+        <div class="loading">Loading...</div>
+      </div>
+    </div>
+
+    <div class="detail" id="detail">
+      <div class="detail-empty">Select a submission from the list to view full details.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ==================================================
+// CONFIG — replace with your project ref before deploying.
+// ==================================================
+const SUPABASE_PROJECT_REF = 'oorbirvuvmbwpuvdqwgm';
+const ENDPOINT = `https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/intake-admin`;
+
+// ==================================================
+// State
+// ==================================================
+let password = sessionStorage.getItem('bp_admin_pw') || '';
+let intakes = [];
+let selectedId = null;
+let currentFilter = 'all';
+
+// ==================================================
+// Login flow
+// ==================================================
+const loginEl   = document.getElementById('login');
+const appEl     = document.getElementById('app');
+const loginForm = document.getElementById('loginForm');
+const loginErr  = document.getElementById('loginErr');
+const loginBtn  = document.getElementById('loginBtn');
+
+async function call(action, extra = {}) {
+  const res = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Password': password,
+    },
+    body: JSON.stringify({ action, ...extra }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  loginErr.style.display = 'none';
+  password = document.getElementById('pw').value;
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Signing in...';
+  try {
+    await call('ping');
+    sessionStorage.setItem('bp_admin_pw', password);
+    showApp();
+  } catch (err) {
+    loginErr.textContent = 'Incorrect password.';
+    loginErr.style.display = 'block';
+    password = '';
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Sign in';
+  }
+});
+
+function logout() {
+  sessionStorage.removeItem('bp_admin_pw');
+  password = '';
+  appEl.style.display = 'none';
+  loginEl.style.display = 'flex';
+  document.getElementById('pw').value = '';
+}
+
+document.getElementById('logoutBtn').addEventListener('click', logout);
+document.getElementById('refreshBtn').addEventListener('click', () => loadList());
+
+function showApp() {
+  loginEl.style.display = 'none';
+  appEl.style.display = 'block';
+  loadList();
+}
+
+// Auto-login if we have a saved password
+if (password) showApp();
+
+// ==================================================
+// List
+// ==================================================
+document.querySelectorAll('#filters .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('#filters .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    currentFilter = chip.dataset.status;
+    renderList();
+  });
+});
+
+async function loadList() {
+  const scroll = document.getElementById('listScroll');
+  scroll.innerHTML = '<div class="loading">Loading...</div>';
+  try {
+    const data = await call('list');
+    intakes = data.intakes || [];
+    renderList();
+  } catch (err) {
+    scroll.innerHTML = `<div class="list-empty">${err.message}</div>`;
+  }
+}
+
+function renderList() {
+  const scroll = document.getElementById('listScroll');
+  const filtered = currentFilter === 'all'
+    ? intakes
+    : intakes.filter(i => i.status === currentFilter);
+
+  if (filtered.length === 0) {
+    scroll.innerHTML = '<div class="list-empty">No submissions in this view.</div>';
+    return;
+  }
+
+  scroll.innerHTML = filtered.map(i => `
+    <div class="list-item ${i.id === selectedId ? 'selected' : ''}" data-id="${i.id}">
+      <div class="li-top">
+        <div class="li-name">${escapeHtml(i.first_name)} ${escapeHtml(i.last_name)}</div>
+        <div class="li-date">${formatDate(i.created_at)}</div>
+      </div>
+      <div class="li-meta">
+        <span class="status status-${i.status}">${i.status}</span>
+        <span>${escapeHtml(i.insurance_provider || '')}</span>
+      </div>
+    </div>
+  `).join('');
+
+  scroll.querySelectorAll('.list-item').forEach(el => {
+    el.addEventListener('click', () => {
+      selectedId = el.dataset.id;
+      renderList();
+      renderDetail();
+    });
+  });
+}
+
+// ==================================================
+// Detail
+// ==================================================
+function renderDetail() {
+  const el = document.getElementById('detail');
+  const i = intakes.find(x => x.id === selectedId);
+  if (!i) {
+    el.innerHTML = '<div class="detail-empty">Select a submission from the list to view full details.</div>';
+    return;
+  }
+
+  const rxBlock = i.has_prescription === 'have-it'
+    ? `<div class="field full"><label>Prescription</label><div class="val">Patient said they will email the prescription. Check info@sunnydme.com inbox.</div></div>`
+    : i.has_prescription === 'need-one'
+      ? `
+        <div class="field"><label>Doctor / OB-GYN</label><div class="val">${escapeHtml(i.doctor_name || '—')}</div></div>
+        <div class="field"><label>Doctor Phone</label><div class="val">${i.doctor_phone ? `<a href="tel:${escapeAttr(i.doctor_phone)}">${escapeHtml(i.doctor_phone)}</a>` : '—'}</div></div>
+        <div class="field full"><label>Doctor Office</label><div class="val">${escapeHtml(i.doctor_office || '—')}</div></div>`
+      : `<div class="field full"><label>Prescription</label><div class="val">Not specified</div></div>`;
+
+  el.innerHTML = `
+    <h2>${escapeHtml(i.first_name)} ${escapeHtml(i.last_name)}</h2>
+    <div class="sub">Submitted ${formatDateTime(i.created_at)} &middot; ID ${i.id}</div>
+
+    <div class="section">
+      <h3>Contact</h3>
+      <div class="grid">
+        <div class="field"><label>Email</label><div class="val"><a href="mailto:${escapeAttr(i.email)}">${escapeHtml(i.email)}</a></div></div>
+        <div class="field"><label>Phone</label><div class="val"><a href="tel:${escapeAttr(i.phone)}">${escapeHtml(i.phone)}</a></div></div>
+        <div class="field"><label>Date of Birth</label><div class="val">${escapeHtml(i.date_of_birth)}</div></div>
+        <div class="field"><label>Due Date</label><div class="val">${escapeHtml(i.due_date || '—')}</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Insurance</h3>
+      <div class="grid">
+        <div class="field"><label>Provider</label><div class="val">${escapeHtml(i.insurance_provider)}</div></div>
+        <div class="field"><label>Member ID</label><div class="val">${escapeHtml(i.insurance_member_id || '—')}</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Prescription</h3>
+      <div class="grid">
+        ${rxBlock}
+      </div>
+    </div>
+
+    ${i.comments ? `
+    <div class="section">
+      <h3>Patient Comments</h3>
+      <div class="field full"><div class="val" style="white-space:pre-wrap">${escapeHtml(i.comments)}</div></div>
+    </div>` : ''}
+
+    <div class="section">
+      <h3>Admin</h3>
+      <div class="admin-block">
+        <div class="row">
+          <div>
+            <label>Status</label>
+            <select id="statusSelect">
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="verified">Insurance Verified</option>
+              <option value="shipped">Shipped</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+          <div></div>
+        </div>
+        <label>Internal Notes</label>
+        <textarea id="notesArea" placeholder="Internal notes — not visible to the patient."></textarea>
+        <div style="margin-top:14px">
+          <button id="saveBtn">Save Changes</button>
+          <span id="savedMsg" class="saved" style="display:none">Saved &#x2713;</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('statusSelect').value = i.status;
+  document.getElementById('notesArea').value = i.internal_notes || '';
+
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveBtn');
+    const saved = document.getElementById('savedMsg');
+    btn.disabled = true;
+    saved.style.display = 'none';
+    try {
+      const data = await call('update', {
+        id: i.id,
+        status: document.getElementById('statusSelect').value,
+        internal_notes: document.getElementById('notesArea').value,
+      });
+      // Update local cache
+      const idx = intakes.findIndex(x => x.id === i.id);
+      if (idx >= 0) intakes[idx] = data.intake;
+      renderList();
+      saved.style.display = 'inline-block';
+      setTimeout(() => { saved.style.display = 'none'; }, 2500);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+// ==================================================
+// Helpers
+// ==================================================
+function formatDate(s) {
+  const d = new Date(s);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function formatDateTime(s) {
+  const d = new Date(s);
+  return d.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+    timeZone: 'America/New_York',
+  }) + ' ET';
+}
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+}
+function escapeAttr(s) { return escapeHtml(s); }
+</script>
+
+</body>
+</html>
